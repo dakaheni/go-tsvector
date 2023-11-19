@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"github.com/lib/pq"
 	"strconv"
 	"strings"
 
@@ -93,7 +94,9 @@ func (tsv TSVector) GormValue(ctx context.Context, db *gorm.DB) clause.Expr {
 		}
 	}
 	return clause.Expr{
-		SQL:  "to_tsvector($1)",
-		Vars: []interface{}{tsv.document},
+		SQL: fmt.Sprintf("to_tsvector(%s)", pq.QuoteLiteral(tsv.document)),
+		//SQL:  "to_tsvector($2)",
+		//Vars: []interface{}{tsv.document},
 	}
+	//return clause.Expr{}
 }
