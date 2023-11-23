@@ -29,10 +29,10 @@ func init() {
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
 		logger.Config{
-			SlowThreshold:             time.Second,  // Slow SQL threshold
-			LogLevel:                  logger.Error, // Log level
-			IgnoreRecordNotFoundError: false,        // Ignore ErrRecordNotFound error for logger
-			Colorful:                  true,         // Enable color
+			SlowThreshold:             time.Second, // Slow SQL threshold
+			LogLevel:                  logger.Info, // Log level
+			IgnoreRecordNotFoundError: false,       // Ignore ErrRecordNotFound error for logger
+			Colorful:                  true,        // Enable color
 		},
 	)
 
@@ -76,6 +76,13 @@ type tsvectorTestGormModel struct {
 	gorm.Model
 	Text    string            `gorm:"not null"`
 	TextTSV tsvector.TSVector `gorm:"not null"`
+}
+
+func (m *tsvectorTestGormModel) BeforeSave(*gorm.DB) (err error) {
+
+	m.TextTSV = tsvector.ToTSVector("english", m.Text)
+
+	return nil
 }
 
 func TestTSVectorSQLCast(t *testing.T) {
@@ -159,8 +166,7 @@ func TestTSVectorGORMCreateFindWithBaseModel(t *testing.T) {
 	text := "I am a test: the quick brown fox jumps over the lazy fox!"
 
 	in := tsvectorTestGormModel{
-		Text:    text,
-		TextTSV: tsvector.ToTSVector(text),
+		Text: text,
 	}
 	res := gormDB.Create(&in)
 	if res.Error != nil {

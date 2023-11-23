@@ -39,12 +39,22 @@ func (tsv TSVector) Lexemes() map[string][]int {
 // https://pkg.go.dev/database/sql#Scanner
 
 func (tsv *TSVector) Scan(v interface{}) error {
-	s, ok := v.([]byte)
-	if !ok {
-		return errors.New("unexpected type from DB")
-	}
 
-	words := strings.Fields(string(s))
+	var s string
+	switch v.(type) {
+	case string:
+		s = fmt.Sprintf("%v", v)
+	case []byte:
+		b, ok := v.([]byte)
+		if !ok {
+			return errors.New("unexpected type from DB")
+		}
+		s = string(b)
+	default:
+		return errors.New("unexpected type from DB")
+
+	}
+	words := strings.Fields(s)
 	tsv.lexemes = make(map[string][]int, len(words))
 	for _, w := range words {
 		splits := strings.SplitN(w, ":", 2)
@@ -89,8 +99,9 @@ func (tsv TSVector) GormDataType() string {
 func (tsv TSVector) GormValue(ctx context.Context, db *gorm.DB) clause.Expr {
 	if len(tsv.config) > 0 {
 		return clause.Expr{
-			SQL:  "to_tsvector($1, $2)",
-			Vars: []interface{}{tsv.config, tsv.document},
+			SQL: fmt.Sprintf("to_tsvector(%s, %s)", pq.QuoteLiteral(tsv.config), pq.QuoteLiteral(tsv.document)),
+			//SQL:  "to_tsvector($1, $2)",
+			//Vars: []interface{}{tsv.config, tsv.document},
 		}
 	}
 	return clause.Expr{
