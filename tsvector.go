@@ -3,6 +3,7 @@ package tsvector
 import (
 	"context"
 	"database/sql/driver"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/lib/pq"
@@ -37,6 +38,18 @@ func (tsv TSVector) Lexemes() map[string][]int {
 }
 
 // https://pkg.go.dev/database/sql#Scanner
+
+func (tsv *TSVector) UnmarshalJSON(data []byte) error {
+	if string(data) == "{}" {
+		return nil
+	}
+	var v string
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+
+	return tsv.Scan(v)
+}
 
 func (tsv *TSVector) Scan(v interface{}) error {
 
